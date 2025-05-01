@@ -1,0 +1,61 @@
+@startuml
+|Main|
+start
+
+:generate_audio_from_points();
+note right
+  • For each slide:
+    – Detect images → silent clips
+    – Extract text → TTS clips
+end note
+
+:measure_durations();
+note left
+  • Read each audio clip
+  • Record durations
+end note
+
+:apply_point_timings();
+note right
+  • Open PPT
+  • For each slide:
+    – Set entry triggers based on durations
+    – Configure auto-advance
+  • Save & close PPT
+end note
+
+: ppt_to_video(use_timings=True);
+note left
+  • Launch PowerPoint COM
+  • Create video with timings
+  • Poll until done
+  • Close PowerPoint
+end note
+
+:combine_audio();
+note right
+  • Concatenate all mp3 clips
+  • Export as combined_audio.mp3
+end note
+
+:generate_lip_sync_video();
+note left
+  • Provide audio and face image
+  • Generate lip sync video
+end note
+
+:merge_lip_sync_video_with_ppt_video();
+note right
+  • Load ppt video and lip sync video
+  • Overlay lip sync video on ppt video
+  • Write final_video.mp4
+end note
+
+:cleanup();
+note left
+  • Remove “audio” folder
+  • Delete intermediate files
+end note
+
+stop
+@enduml

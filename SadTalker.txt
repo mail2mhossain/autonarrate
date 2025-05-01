@@ -1,0 +1,15 @@
+git clone https://github.com/OpenTalker/SadTalker.git
+cd SadTalker
+
+conda create --prefix D:\\conda_env\\sad_talker Python=3.8 -y && conda activate D:\conda_env\sad_talker
+
+pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+
+conda install ffmpeg -y
+
+pip install -r requirements.txt
+
+
+
+
+python inference.py --driven_audio combined_audio.wav --source_image cropped_circle.png --enhancer gfpgan

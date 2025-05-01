@@ -1,0 +1,8 @@
+python-pptx 
+pywin32 
+edge-tts 
+pydub
+moviepy
+PySide6 
+python-vlc
+pillow
