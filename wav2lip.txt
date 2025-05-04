@@ -1,0 +1,13 @@
+git clone https://github.com/Rudrabha/Wav2Lip.git
+cd Wav2Lip
+
+conda create --prefix Z:\conda_env\wav_lip_env Python=3.7 -y && conda activate Z:\conda_env\wav_lip_env
+
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu113
+pip install opencv-python-headless
+pip install librosa==0.7.0 numpy==1.17.1 tqdm==4.45.0 numba==0.48
+
+Download "wav2lip_gan.pth" from https://huggingface.co/Nekochu/Wav2Lip/tree/main and save it in the "checkpoints" folder.
+
+python inference.py --face cropped_circle.png --audio combined_audio.wav --checkpoint_path checkpoints/wav2lip_gan.pth
