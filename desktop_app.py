@@ -31,16 +31,22 @@ class ConversionWorker(QThread):
     def __init__(self, ppt_path: str):
         super().__init__()
         self.ppt_path = ppt_path
-        # Determine output path (.mp4 alongside PPTX)
-        base = os.path.splitext(self.ppt_path)[0]
-        self.video_path = base + ".mp4"
-        self.ppt_video_path = base + "_ppt.mp4"
+        video_file_name = os.path.splitext(os.path.basename(self.ppt_path))[0]
+        parent_dir = os.path.dirname(os.path.abspath(self.ppt_path))
+        self.video_dir = os.path.join(parent_dir, video_file_name)
+        
+        if not os.path.exists(video_dir):
+            os.makedirs(video_dir)
+
+        self.video_path = os.path.join(video_dir, video_file_name + ".mp4")
+        self.ppt_video_path = os.path.join(video_dir, video_file_name + "_ppt.mp4")
+        self.audio_dir = os.path.join(video_dir, "audio")
         
 
     def run(self):
         try:
             self.progress.emit(0, "Starting audio generation...")
-            audio_map = generate_audio_from_points(self.ppt_path, progress_callback=lambda p, m: self.progress.emit(p, "Audio: " + m))
+            audio_map = generate_audio_from_points(self.ppt_path, self.audio_dir, progress_callback=lambda p, m: self.progress.emit(p, "Audio: " + m))
             self.progress.emit(0, "Starting duration measurement...")
             durations_map = measure_durations(audio_map, progress_callback=lambda p, m: self.progress.emit(p, "Duration: " + m))
             
@@ -56,29 +62,17 @@ class ConversionWorker(QThread):
                     self.progress.emit(0, f"Retrying point timing due to error: {e} (attempt {attempt + 2}/3)")
             
             self.progress.emit(0, "Starting video generation...")
-            ppt_to_video(self.ppt_path, self.ppt_video_path, use_timings=True, default_slide_duration=7, progress_callback=lambda p, m: self.progress.emit(p, "Video: " + m))
+            if not os.path.exists(self.ppt_video_path):
+                ppt_to_video(self.ppt_path, self.ppt_video_path, use_timings=True, default_slide_duration=7, progress_callback=lambda p, m: self.progress.emit(p, "Video: " + m))
             # combine generated audio and merge with video
             self.progress.emit(0, "Starting audio combination...")
-            combined = combine_audio(audio_map, "combined_audio.mp3", progress_callback=lambda p, m: self.progress.emit(p, "Audio: " + m))
+            combined_audio_file = os.path.join(self.video_dir, "combined_audio.mp3")
+            if not os.path.exists(combined_audio_file):
+                combine_audio(audio_map,combined_audio_file, progress_callback=lambda p, m: self.progress.emit(p, "Audio: " + m))
             self.progress.emit(0, "Starting merge audio and video...")
-            merge_audio_video(self.ppt_video_path, combined,  self.video_path, progress_callback=lambda p, m: self.progress.emit(p, "Merge: " + m))
-
-            # clean up
-            # self.progress.emit(0, "Starting cleanup...")
-            # for attempt in range(3):
-            #     try:
-            #         time.sleep(5)
-            #         if os.path.isfile("combined_audio.mp3"):
-            #             os.remove("combined_audio.mp3")
-            #         if os.path.isdir("audio"):
-            #             shutil.rmtree("audio")
-            #         if os.path.isfile(self.ppt_video_path):
-            #             # print(f"Removing ppt video file: {self.ppt_video_path}")
-            #             os.remove(self.ppt_video_path)
-            #         break
-            #     except Exception as e:
-            #         if attempt == 2:
-            #             self.error.emit(f"Cleanup failed: {e}")
+            
+            if not os.path.exists(self.video_path):
+                merge_audio_video(self.ppt_video_path, combined_audio_file,  self.video_path, progress_callback=lambda p, m: self.progress.emit(p, "Merge: " + m))
                     
             self.progress.emit(100, "Done")
             # Notify success

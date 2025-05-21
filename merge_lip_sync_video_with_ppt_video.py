@@ -1,8 +1,8 @@
 from moviepy import VideoFileClip, CompositeVideoClip
 
 # 1. Load your two clips
-ppt_clip     = VideoFileClip("computational_thinking_ppt.mp4")
-lipsync_clip = VideoFileClip("gooey.ai lipsync.mp4")
+ppt_clip     = VideoFileClip("What_is_Robot.mp4")
+lipsync_clip = VideoFileClip("result_voice.mp4")
 
 # 2. Resize/position the lip-sync window
 #    e.g. make it 25% of the width and put it in the top-right corner
@@ -22,7 +22,7 @@ final = CompositeVideoClip([ppt_clip, overlay])
 
 # 5. Export
 final.write_videofile(
-    "combined_output.mp4",
+    "What is Robot.mp4",
     fps=ppt_clip.fps,
     codec="libx264",
     audio_codec="aac",

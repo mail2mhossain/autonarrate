@@ -69,7 +69,7 @@ def ppt_to_video(ppt_path: str,
     time.sleep(5)
 
 
-def generate_audio_from_points(ppt_path: str, output_dir: str = "audio", progress_callback=None):
+def generate_audio_from_points(ppt_path: str, output_dir: str, progress_callback=None):
     """
     Generates audio segments for each bullet point or image cue in every slide of a PowerPoint presentation.
     Text content is converted to speech using TTS, while images may result in silent audio segments for timing.
@@ -105,10 +105,12 @@ def generate_audio_from_points(ppt_path: str, output_dir: str = "audio", progres
                         return np.zeros((1, 2))  # 1 sample, stereo
                     else:
                         return np.zeros((len(t), 2))  # multiple samples, stereo
-                silent_clip = AudioClip(make_silence, duration=duration)
-                # silent_clip = silent_clip.with_fps(44100)
+                
                 fname = os.path.join(output_dir, f"slide_{slide_idx}_point_{point_counter}.mp3")
-                silent_clip.write_audiofile(fname, fps=44100, codec='libmp3lame')
+                if not os.path.exists(fname):
+                    silent_clip = AudioClip(make_silence, duration=duration)
+                    silent_clip.write_audiofile(fname, fps=44100, codec='libmp3lame')
+
                 print(f"Generated silence audio [{slide_idx}]: {fname}")
                 audio_map[slide_idx].append(fname)
                 point_counter += 1
@@ -122,11 +124,11 @@ def generate_audio_from_points(ppt_path: str, output_dir: str = "audio", progres
                 if not text or not re.search(r"\w", text):
                     continue
                 try:
-                    # tts = gTTS(text=text, lang="en")
                     fname = os.path.join(output_dir, f"slide_{slide_idx}_point_{point_counter}.mp3")
-                    # tts.save(fname)
-                    communicate = edge_tts.Communicate(text, "en-US-ChristopherNeural")
-                    communicate.save_sync(fname)
+                    if not os.path.exists(fname):
+                        communicate = edge_tts.Communicate(text, "en-US-ChristopherNeural")
+                        communicate.save_sync(fname)
+
                     print(f"Generated audio: {fname}")
                     audio_map[slide_idx].append(fname)
                     point_counter += 1
@@ -233,7 +235,7 @@ def apply_point_timings(pptx_path: str, durations_map: dict, progress_callback=N
 
 
 # --- combine & merge utilities ---
-def combine_audio(audio_map, output_audio="combined_audio.mp3", progress_callback=None):
+def combine_audio(audio_map, output_audio, progress_callback=None):
     """
     Flattens and concatenates all generated audio clips into a single audio file, preserving the order of slides and points.
     """
@@ -276,25 +278,30 @@ def merge_audio_video(video_path, audio_path, output_video="final_video.mp4", pr
 
 
 if __name__ == "__main__":
-    PPT_FILE   = "computational_thinking.pptx"
-    file_name = PPT_FILE.split(".")[0]
-    VIDEO_FILE = file_name + ".mp4"
-    PPT_VIDEO = file_name + "_ppt.mp4"
+    PPT_FILE   = "Z:\\CCS\\computational_thinking.pptx"
+    video_file_name = os.path.splitext(os.path.basename(PPT_FILE))[0]
+    parent_dir = os.path.dirname(os.path.abspath(PPT_FILE))
+    video_dir = os.path.join(parent_dir, video_file_name)
+    
+    if not os.path.exists(video_dir):
+        os.makedirs(video_dir)
+
+    VIDEO_FILE = os.path.join(video_dir, video_file_name + ".mp4")
+    PPT_VIDEO = os.path.join(video_dir, video_file_name + "_ppt.mp4")
 
     # Generate audio per bullet point
-    
-    audio_map = generate_audio_from_points(PPT_FILE)
+    audio_dir = os.path.join(video_dir, "audio")
+    audio_map = generate_audio_from_points(PPT_FILE, audio_dir)
     
     durations_map = measure_durations(audio_map)
     apply_point_timings(PPT_FILE, durations_map)
-    # print("Generated audio files per slide:", audio_map)
-    ppt_to_video(PPT_FILE, PPT_VIDEO, use_timings=True, default_slide_duration=7)
-    # combine generated audio and merge with video
-    combined = combine_audio(audio_map, "combined_audio.mp3")
-    merge_audio_video(PPT_VIDEO, combined,  VIDEO_FILE)
+    if not os.path.exists(PPT_VIDEO):
+        ppt_to_video(PPT_FILE, PPT_VIDEO, use_timings=True, default_slide_duration=7)
+    
+    combined_audio_file = os.path.join(video_dir, "combined_audio.mp3")
+    if not os.path.exists(combined_audio_file):
+        combine_audio(audio_map, combined_audio_file)
 
-    # clean up
-    time.sleep(5)
-    shutil.rmtree("audio")
-    os.remove("combined_audio.mp3")
-    os.remove(PPT_VIDEO)
+    if not os.path.exists(VIDEO_FILE):
+        merge_audio_video(PPT_VIDEO, combined_audio_file,  VIDEO_FILE)
+
