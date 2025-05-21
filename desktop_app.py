@@ -35,12 +35,12 @@ class ConversionWorker(QThread):
         parent_dir = os.path.dirname(os.path.abspath(self.ppt_path))
         self.video_dir = os.path.join(parent_dir, video_file_name)
         
-        if not os.path.exists(video_dir):
-            os.makedirs(video_dir)
+        if not os.path.exists(self.video_dir):
+            os.makedirs(self.video_dir)
 
-        self.video_path = os.path.join(video_dir, video_file_name + ".mp4")
-        self.ppt_video_path = os.path.join(video_dir, video_file_name + "_ppt.mp4")
-        self.audio_dir = os.path.join(video_dir, "audio")
+        self.video_path = os.path.join(self.video_dir, video_file_name + ".mp4")
+        self.ppt_video_path = os.path.join(self.video_dir, video_file_name + "_ppt.mp4")
+        self.audio_dir = os.path.join(self.video_dir, "audio")
         
 
     def run(self):
